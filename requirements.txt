@@ -1,0 +1,7 @@
+# Python dependencies
+requests
+python-dotenv
+#openweather api key
+# System dependencies (only for Linux users, already built-in for Windows/Mac)
+# Uncomment if you're on Ubuntu/Debian
+# sudo apt-get install python3-tk
