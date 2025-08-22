@@ -29,9 +29,6 @@ DEFAULT_UNITS = "metric"  # "metric" for °C, "imperial" for °F
 
 
 def temp_to_bg(temp_c: float) -> str:
-    """
-    Map temperature to a pleasant background color.
-    """
     if temp_c is None:
         return "#2b2b2b"
     if temp_c <= 0:
@@ -43,6 +40,17 @@ def temp_to_bg(temp_c: float) -> str:
     if temp_c <= 35:
         return "#ffeaa7"
     return "#ff7675"
+
+
+def wind_deg_to_dir(deg: float | int | None) -> str:
+    if deg is None:
+        return "—"
+    dirs = ["N", "NNE", "NE", "ENE",
+            "E", "ESE", "SE", "SSE",
+            "S", "SSW", "SW", "WSW",
+            "W", "WNW", "NW", "NNW"]
+    i = int((deg % 360) / 22.5 + 0.5) % 16
+    return dirs[i]
 
 
 def kph_from_ms(ms):
@@ -154,8 +162,19 @@ class WeatherApp(ctk.CTk):
         # Right: status / errors
         self.right_card = ctk.CTkFrame(self.content, corner_radius=16)
         self.right_card.grid(row=0, column=2, sticky="nsew", padx=12, pady=12)
-        self.status_label = ctk.CTkLabel(self.right_card, text="", wraplength=240)
-        self.status_label.pack(padx=12, pady=12)
+
+        self.sunrise_label = ctk.CTkLabel(self.right_card, text="🌅 Sunrise: —", wraplength=240, font=("Segoe UI", 16, "bold"))
+        self.sunrise_label.pack(padx=12, pady=8)
+
+        self.sunset_label = ctk.CTkLabel(self.right_card, text="🌇 Sunset: —", wraplength=240, font=("Segoe UI", 16, "bold"))
+        self.sunset_label.pack(padx=12, pady=8)
+
+        self.wind_dir_label = ctk.CTkLabel(self.right_card, text="🧭 Wind Dir: —", wraplength=240, font=("Segoe UI", 16, "bold"))
+        self.wind_dir_label.pack(padx=12, pady=8)
+
+        # tiny status line (kept so set_status works)
+        self.status_label = ctk.CTkLabel(self.right_card, text="", wraplength=240, font=("Segoe UI", 11))
+        self.status_label.pack(padx=12, pady=(6, 2))
 
         # --- Chart area (forecast) ---
         self.chart_frame = ctk.CTkFrame(self, corner_radius=16)
@@ -248,6 +267,8 @@ class WeatherApp(ctk.CTk):
             weather = current["weather"][0]
             main = current["main"]
             wind = current.get("wind", {})
+            sys_info = current.get("sys", {})
+            tz_offset_sec = current.get("timezone", 0)
 
             temp = main.get("temp")
             feels = main.get("feels_like")
@@ -279,11 +300,26 @@ class WeatherApp(ctk.CTk):
             else:
                 self.range_label.configure(text="Min/Max: —")
 
+            # --- Right card: sunrise / sunset / wind direction ---
+            def format_time(ts: int | None, tz_offset: int):
+                if ts is None:
+                    return "—"
+                return (dt.datetime.utcfromtimestamp(ts) + dt.timedelta(seconds=tz_offset)).strftime("%H:%M")
+
+            sunrise_str = format_time(sys_info.get("sunrise"), tz_offset_sec)
+            sunset_str = format_time(sys_info.get("sunset"), tz_offset_sec)
+            wind_dir = wind_deg_to_dir(wind.get("deg"))
+
+            self.sunrise_label.configure(text=f"🌅 Sunrise: {sunrise_str}")
+            self.sunset_label.configure(text=f"🌇 Sunset: {sunset_str}")
+            self.wind_dir_label.configure(text=f"🧭 Wind Dir: {wind_dir}")
+
             self.set_icon(icon_code)
             self.set_bg_by_temp()
-            self.city = city
+            self.set_status("")  # clear
+            self.city = city  # remember last searched city
         except Exception as e:
-            self.set_status(f"Render error: {e}")
+            self.set_status(f"Parse error: {e}")
             return
 
         # --- Render forecast chart ---
