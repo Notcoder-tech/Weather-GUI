@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 import os
 import io
 import requests
@@ -351,7 +351,7 @@ class WeatherApp(ctk.CTk):
 if __name__ == "__main__":
     app = WeatherApp()
     app.mainloop()
-=======
+
 import os
 import io
 import requests
@@ -668,4 +668,4 @@ class WeatherApp(ctk.CTk):
 if __name__ == "__main__":
     app = WeatherApp()
     app.mainloop()
->>>>>>> f512d7831fe886d4b57d94ec668b5b5f7106a3d7
+
